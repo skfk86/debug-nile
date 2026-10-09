@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0C1A24">
+<title>Debug Nile</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0C1A24;--s1:#132736;--s2:#1A3446;--line:#254357;--tx:#E8F1F2;--mut:#8FA9B5;--gold:#F0B341;--ok:#46C79A;--bad:#FF6B5E;--river:#3C8DAD;--fs:14px;
+--top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));--bot:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px))}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:Tajawal,system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+#app{height:100dvh;display:flex;flex-direction:column;padding-top:var(--top)}
+header{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:60px}
+.ib{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;color:var(--tx)}
+.ib:active{background:var(--s2)}
+header h1{font-size:20px;font-weight:800;flex:1}
+header h1 span{color:var(--gold)}
+#view{flex:1;overflow-y:auto;padding:4px 16px 24px;-webkit-overflow-scrolling:touch}
+nav{display:grid;grid-template-columns:repeat(4,1fr);background:var(--s1);border-top:1px solid var(--line);padding:6px 6px calc(6px + var(--bot))}
+nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border-radius:14px;color:var(--mut);font-size:12px;font-weight:500;min-height:56px}
+nav button.on{color:var(--gold);background:var(--s2)}
+h2{font-size:18px;font-weight:800;margin:22px 0 10px}
+.hero{position:relative;overflow:hidden;border-radius:28px;padding:20px;background:linear-gradient(160deg,#1B4560,#112B3C);border:1px solid var(--line)}
+.hero .rank{font-size:13px;color:var(--mut)}
+.hero .lvl{font-size:30px;font-weight:800;margin:2px 0 14px}
+.river{height:34px;border-radius:12px;background:#0C1A2488;position:relative;overflow:hidden}
+.river i{position:absolute;inset:0 auto 0 0;width:0;background:var(--river);transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.river svg{position:absolute;inset:-2px 0 0 0;width:200%;height:100%;stroke:none;fill:#0C1A24;opacity:.0}
+.hero .row{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--mut)}
+.chips{display:flex;gap:10px;margin-top:14px}
+.chip{flex:1;background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:12px;text-align:center}
+.chip b{display:block;font-size:22px;font-weight:800}
+.chip small{color:var(--mut);font-size:12px}
+.card{display:flex;align-items:center;gap:12px;width:100%;text-align:start;background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;min-height:68px}
+.card:active{background:var(--s2);transform:scale(.99)}
+.card .t{flex:1}
+.card .t b{display:block;font-size:16px}
+.card .t small{color:var(--mut);font-size:13px}
+.dot{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--s2);color:var(--gold);font-weight:800}
+.dot.done{background:#1D4A41;color:var(--ok)}
+.diff{display:flex;gap:3px}.diff i{width:7px;height:7px;border-radius:50%;background:var(--line)}.diff i.f{background:var(--gold)}
+.daily{background:linear-gradient(120deg,var(--gold),#E0922C);color:#1A1204;border:0}
+.daily .t small{color:#4A3207}.daily .dot{background:#1A120422;color:#1A1204}
+.bars{display:flex;align-items:flex-end;gap:8px;height:150px;background:var(--s1);border:1px solid var(--line);border-radius:20px;padding:16px 14px 10px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;font-size:11px;color:var(--mut)}
+.bars span{width:100%;max-width:26px;border-radius:8px 8px 4px 4px;background:var(--river);min-height:4px}
+.bars div.today span{background:var(--gold)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 .chip{text-align:start;padding:16px}
+.ach{display:flex;gap:12px;align-items:center;background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}
+.ach .ic{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--s2);color:var(--mut);flex:none}
+.ach.on .ic{background:var(--gold);color:#1A1204}
+.ach .t{flex:1}.ach b{font-size:16px}.ach small{display:block;color:var(--mut);font-size:13px;margin:2px 0 8px}
+.bar{height:6px;border-radius:3px;background:var(--s2);overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}
+.set{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;min-height:64px;width:100%;text-align:start}
+.set .t{flex:1}.set b{font-size:16px;display:block}.set small{color:var(--mut);font-size:13px}
+.sw{width:52px;height:30px;border-radius:15px;background:var(--s2);position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:24px;height:24px;border-radius:50%;background:var(--mut);transition:.2s}
+.sw.on{background:var(--ok)}.sw.on::after{inset-inline-start:25px;background:#fff}
+.stp{display:flex;align-items:center;gap:6px}.stp button{width:44px;height:44px;border-radius:12px;background:var(--s2);font-size:20px;font-weight:800}
+.danger{color:var(--bad)}
+/* challenge */
+#ch{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;padding-top:var(--top);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:20}
+#ch.open{transform:none}
+#ch .body{flex:1;overflow-y:auto;padding:0 16px 16px}
+.task{background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:14px;line-height:1.7;font-size:15px}
+.ed{position:relative;height:300px;margin-top:12px;background:#08131B;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.ed:focus-within{border-color:var(--river)}
+.ed pre,.ed .code{position:absolute;inset:0;margin:0;padding:14px;border:0;font:var(--fs)/1.7 ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;direction:ltr;text-align:left;white-space:pre;overflow-wrap:normal;tab-size:2;-moz-tab-size:2;-webkit-text-size-adjust:100%}
+.ed pre{color:#CFE6EA;overflow:hidden;pointer-events:none}
+.ed .code{width:100%;height:100%;resize:none;outline:0;overflow:auto;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--gold);-webkit-user-select:text;user-select:text}
+.ed .code::selection{background:#3C8DAD88}
+#hl .c{color:#6C8795}#hl .s{color:#46C79A}#hl .n{color:#F0B341}#hl .k{color:#78B8D6}#hl .f{color:#C9A7FF}#hl .r{color:#FF9D7A}#hl .p,#hl .o{color:#8FA9B5}
+.res{margin-top:12px}
+.res div{display:flex;gap:8px;align-items:center;padding:10px 12px;border-radius:12px;margin-bottom:6px;font-size:14px;direction:ltr;font-family:ui-monospace,Menlo,monospace}
+.res .p{background:#1D4A4188;color:var(--ok)}.res .f{background:#5A262288;color:#FFB4AC}
+.hint{margin-top:12px;padding:12px 14px;border-radius:14px;background:#F0B34118;border:1px solid #F0B34155;color:#F7D58F;font-size:14px;line-height:1.6}
+.bar2{display:flex;gap:10px;padding:12px 16px calc(12px + var(--bot));border-top:1px solid var(--line);background:var(--s1)}
+.btn{flex:1;min-height:52px;border-radius:16px;font-weight:800;font-size:16px;background:var(--s2)}
+.btn.main{background:var(--gold);color:#1A1204}
+.btn:active{transform:scale(.98)}
+/* drawer */
+#scrim{position:fixed;inset:0;background:#000A;opacity:0;pointer-events:none;transition:.25s;z-index:30}
+#scrim.on{opacity:1;pointer-events:auto}
+#dr{position:fixed;top:0;bottom:0;right:0;width:min(82vw,330px);background:var(--s1);border-inline-start:1px solid var(--line);transform:translateX(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:31;display:flex;flex-direction:column;padding:calc(20px + var(--top)) 16px calc(16px + var(--bot));overflow-y:auto}
+#dr.on{transform:none}
+#dr .brand{font-size:24px;font-weight:800;margin-bottom:4px}#dr .brand span{color:var(--gold)}
+#dr .sub{color:var(--mut);font-size:14px;margin-bottom:18px}
+.dbtn{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:0 12px;border-radius:14px;font-size:16px;font-weight:500;text-align:start}
+.dbtn:active{background:var(--s2)}
+.app{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--s2);margin-bottom:8px;width:100%;text-align:start}
+.app .dot{background:var(--bg)}
+.app small{color:var(--mut);display:block;font-size:12px}
+.sheet{position:fixed;inset-inline:0;bottom:0;max-height:80dvh;overflow-y:auto;background:var(--s1);border-radius:28px 28px 0 0;border-top:1px solid var(--line);padding:22px 20px calc(22px + var(--bot));transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:40}
+.sheet.on{transform:none}
+.sheet h3{font-size:20px;margin-bottom:10px}.sheet p{color:var(--mut);line-height:1.8;font-size:15px;margin-bottom:10px}
+#toast{position:fixed;top:calc(14px + var(--top));inset-inline:16px;margin:auto;max-width:420px;background:var(--gold);color:#1A1204;border-radius:16px;padding:14px 16px;font-weight:700;transform:translateY(-140%);transition:transform .35s cubic-bezier(.2,.8,.2,1);z-index:60;text-align:center}
+#toast.on{transform:none}
+.fl{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}.fl::-webkit-scrollbar{display:none}
+.fl button{flex:none;min-height:40px;padding:0 14px;border-radius:20px;background:var(--s1);border:1px solid var(--line);font-size:14px}
+.fl .on{background:var(--gold);color:#1A1204;border-color:var(--gold);font-weight:700}
+.kb{background:var(--s2);border-radius:14px;padding:12px;margin-bottom:8px}
+.kb b{display:block;direction:ltr;text-align:left;font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--gold);margin-bottom:4px}
+.kb span{color:var(--mut);font-size:14px;line-height:1.7}
+.st{display:flex;gap:10px;margin-bottom:10px;font-size:15px;line-height:1.7}
+.st i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1A1204;display:grid;place-items:center;font-weight:800;flex:none;font-size:13px;margin-top:2px}
+#tr{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;padding-top:var(--top);transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:15}
+#tr.open{transform:none}
+#tr .body{flex:1;overflow-y:auto;padding:0 16px calc(24px + var(--bot))}
+.task code,.opt code,.hint code{font-family:ui-monospace,Menlo,Consolas,monospace;direction:ltr;unicode-bidi:isolate;background:#0C1A24;padding:1px 6px;border-radius:6px;font-size:.92em}
+.tag{display:inline-block;direction:ltr;background:#3C8DAD33;color:#9AD3EA;border-radius:8px;padding:0 8px;margin-inline-end:8px;font-size:13px;font-weight:700}
+.mc{margin-top:12px;direction:ltr;background:#08131B;border:1px solid var(--line);border-radius:16px;padding:12px 0;overflow-x:auto;font:var(--fs)/1.7 ui-monospace,Menlo,Consolas,monospace}
+.ln{display:flex;white-space:pre;padding-right:14px;min-width:max-content}
+.ln i{flex:none;width:36px;text-align:right;padding-right:12px;color:#4C6A7A;font-style:normal;-webkit-user-select:none;user-select:none}
+.ln span{color:#CFE6EA}
+.mc .c{color:#6C8795}.mc .s{color:#46C79A}.mc .n{color:#F0B341}.mc .k{color:#78B8D6}.mc .f{color:#C9A7FF}.mc .p,.mc .o{color:#8FA9B5}
+.opts{margin-top:12px;display:grid;gap:10px}
+.opt{display:block;width:100%;text-align:start;min-height:56px;padding:12px 14px;border-radius:16px;background:var(--s1);border:1.5px solid var(--line);font-size:15px;line-height:1.7}
+.opt:active{background:var(--s2)}
+.opt.sel{border-color:var(--gold);background:var(--s2)}
+.opt.good{border-color:var(--ok);background:#1D4A41}
+.opt.bad{border-color:var(--bad);background:#5A2622}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="ib" id="menu" aria-label="القائمة"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    <h1>Debug <span>Nile</span></h1>
+    <button class="ib" id="hdrStreak" aria-label="الأيام المتتالية" style="width:auto;padding:0 12px;gap:6px;color:var(--gold);font-weight:800"><svg viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/></svg><span id="sn">0</span></button>
+  </header>
+  <main id="view"></main>
+  <nav id="nav"></nav>
+</div>
+
+<section id="tr">
+  <header>
+    <button class="ib" id="trBack" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <h1 id="trT">المسارات</h1>
+  </header>
+  <div class="body" id="trB"></div>
+</section>
+
+<section id="ch">
+  <header>
+    <button class="ib" id="chBack" aria-label="رجوع"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <h1 id="chT" style="font-size:18px"></h1>
+    <div class="diff" id="chD"></div>
+  </header>
+  <div class="body">
+    <div class="task" id="chTask"></div>
+    <div class="ed" id="edw"><pre id="hl" aria-hidden="true"></pre><textarea class="code" id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="محرر الشيفرة"></textarea></div>
+    <div class="mc" id="mc" style="display:none"></div>
+    <div class="opts" id="opts"></div>
+    <div id="hint"></div>
+    <div class="res" id="res"></div>
+  </div>
+  <div class="bar2">
+    <button class="btn" id="hintBtn">تلميح</button>
+    <button class="btn main" id="runBtn">تحقق من الإصلاح</button>
+  </div>
+</section>
+
+<div id="scrim"></div>
+<aside id="dr"></aside>
+<div class="sheet" id="sheet"></div>
+<div id="toast"></div>
+
+<script>
+/* ===== Data ===== */
+const L=a=>a.join("\n");
+const CH=[
+{id:"sum",fn:"sum",d:1,xp:20,title:"مجموع الأرقام",desc:"الدالة <b>sum</b> يجب أن تُرجع مجموع عناصر المصفوفة، لكنها ترجع <code>NaN</code>. اعثر على الخطأ وأصلحه.",
+ code:L(["function sum(arr) {","  let total = 0;","  for (let i = 0; i <= arr.length; i++) {","    total += arr[i];","  }","  return total;","}"]),
+ hint:"تحقق من شرط الحلقة: ما هو آخر فهرس صحيح في المصفوفة؟",tests:[[[[1,2,3]],6],[[[]],0],[[[10,-4]],6]]},
+{id:"even",fn:"isEven",d:1,xp:20,title:"زوجي أم فردي",desc:"الدالة <b>isEven</b> يجب أن ترجع <code>true</code> للأعداد الزوجية فقط، لكن نتائجها معكوسة.",
+ code:L(["function isEven(n) {","  return n % 2 === 1;","}"]),
+ hint:"ما باقي قسمة العدد الزوجي على 2؟",tests:[[[4],true],[[7],false],[[0],true]]},
+{id:"rev",fn:"reverse",d:1,xp:25,title:"عكس النص",desc:"الدالة <b>reverse</b> يجب أن ترجع النص معكوسًا، لكنها ترجع شيئًا آخر.",
+ code:L(["function reverse(s) {","  return s.split('').reverse();","}"]),
+ hint:"الناتج الآن مصفوفة. كيف نحوّلها إلى نص؟",tests:[[["nile"],"elin"],[["a"],"a"],[[""],""]]},
+{id:"max",fn:"maxOf",d:2,xp:35,title:"أكبر رقم",desc:"الدالة <b>maxOf</b> ترجع أكبر عنصر، لكنها تخطئ مع الأرقام السالبة.",
+ code:L(["function maxOf(arr) {","  let m = 0;","  for (const x of arr) {","    if (x > m) m = x;","  }","  return m;","}"]),
+ hint:"من أين يجب أن تبدأ المقارنة إذا كانت كل الأرقام أقل من صفر؟",tests:[[[[3,9,2]],9],[[[-5,-2,-9]],-2],[[[-1]],-1]]},
+{id:"vow",fn:"countVowels",d:2,xp:40,title:"عدّاد الحروف المتحركة",desc:"الدالة <b>countVowels</b> يجب أن تعدّ كل حروف aeiou في النص، لكنها لا تعدّ إلا واحدًا.",
+ code:L(["function countVowels(s) {","  const m = s.match(/[aeiou]/);","  return m ? m.length : 0;","}"]),
+ hint:"التعبير النمطي يتوقف عند أول تطابق. أي علامة تجعله يبحث في النص كله؟",tests:[[["banana"],3],[["xyz"],0],[["audio"],4]]},
+{id:"fact",fn:"factorial",d:3,xp:60,title:"المضروب",desc:"الدالة <b>factorial</b> تنهار مع الصفر برسالة تجاوز المكدس. أصلحها دون كسر باقي الحالات.",
+ code:L(["function factorial(n) {","  if (n === 1) return 1;","  return n * factorial(n - 1);","}"]),
+ hint:"ما قيمة المضروب للصفر؟ وما الحالة التي توقف الاستدعاء الذاتي؟",tests:[[[0],1],[[1],1],[[5],120]]},
+{id:"last",fn:"getLast",d:1,xp:20,title:"آخر عنصر",desc:"الدالة <b>getLast</b> يجب أن ترجع آخر عنصر في المصفوفة، لكنها ترجع <code>undefined</code>.",
+ code:L(["function getLast(arr) {","  return arr[arr.length];","}"]),
+ hint:"من أي رقم تبدأ فهارس المصفوفة؟",tests:[[[[1,2,3]],3],[[["a"]],"a"],[[[7,8]],8]]},
+{id:"same",fn:"isSame",d:1,xp:20,title:"مقارنة صارمة",desc:"الدالة <b>isSame</b> يجب أن ترجع <code>true</code> فقط إذا تساوت القيمتان في القيمة والنوع. حاليًا <code>isSame(5, '5')</code> ترجع true.",
+ code:L(["function isSame(a, b) {","  return a == b;","}"]),
+ hint:"هناك معامل مقارنة لا يحوّل الأنواع.",tests:[[[5,"5"],false],[[0,false],false],[[3,3],true],[["a","a"],true]]},
+{id:"fizz",fn:"fizzBuzz",d:1,xp:25,title:"فيزبَز",desc:"الدالة <b>fizzBuzz</b> ترجع <code>Fizz</code> لمضاعفات 3، و<code>Buzz</code> لمضاعفات 5، و<code>FizzBuzz</code> لمضاعفات الاثنين معًا، وإلا الرقم نصًا. العدد 15 يعطي نتيجة خاطئة.",
+ code:L(["function fizzBuzz(n) {","  if (n % 3 === 0) return 'Fizz';","  if (n % 5 === 0) return 'Buzz';","  if (n % 15 === 0) return 'FizzBuzz';","  return String(n);","}"]),
+ hint:"عدد مثل 15 يطابق أول شرط ولا يصل للشرط الأخير. أعد ترتيب الشروط.",tests:[[[15],"FizzBuzz"],[[9],"Fizz"],[[10],"Buzz"],[[7],"7"],[[30],"FizzBuzz"]]},
+{id:"avg",fn:"average",d:1,xp:25,title:"المتوسط الحسابي",desc:"الدالة <b>average</b> ترجع متوسط الأرقام، لكنها تعطي <code>NaN</code> مع المصفوفة الفارغة. المطلوب أن ترجع 0 في هذه الحالة.",
+ code:L(["function average(arr) {","  let sum = 0;","  for (const x of arr) sum += x;","  return sum / arr.length;","}"]),
+ hint:"ماذا ينتج عن 0 ÷ 0؟ تعامل مع الحالة قبل القسمة.",tests:[[[[1,2,3,4]],2.5],[[[]],0],[[[5]],5]]},
+{id:"uniq",fn:"unique",d:2,xp:35,title:"إزالة التكرار",desc:"الدالة <b>unique</b> يجب أن ترجع المصفوفة بدون عناصر مكررة مع الحفاظ على الترتيب، لكنها ترجع المكرر فقط.",
+ code:L(["function unique(arr) {","  return arr.filter((x, i) => arr.indexOf(x) !== i);","}"]),
+ hint:"indexOf ترجع موضع أول ظهور. متى يكون العنصر في أول ظهور له؟",tests:[[[[1,2,2,3,1]],[1,2,3]],[[["a","a"]],["a"]],[[[]],[]]]},
+{id:"sortn",fn:"sortNumbers",d:2,xp:35,title:"ترتيب الأرقام",desc:"الدالة <b>sortNumbers</b> يجب أن ترتب الأرقام تصاعديًا، لكن <code>[10, 9, 1]</code> تعطي ترتيبًا غريبًا.",
+ code:L(["function sortNumbers(arr) {","  return arr.sort();","}"]),
+ hint:"الترتيب الافتراضي يعامل الأرقام كنصوص. مرّر دالة مقارنة.",tests:[[[[10,9,1]],[1,9,10]],[[[5,25,100,1]],[1,5,25,100]],[[[3,-2,0]],[-2,0,3]]]},
+{id:"pal",fn:"isPalindrome",d:2,xp:40,title:"الجملة المتناظرة",desc:"الدالة <b>isPalindrome</b> يجب أن تتجاهل المسافات وحالة الأحرف عند الفحص. جملة مثل <code>A man a plan a canal Panama</code> يجب أن تُعتبر متناظرة.",
+ code:L(["function isPalindrome(s) {","  const t = s.toLowerCase();","  return t === t.split('').reverse().join('');","}"]),
+ hint:"المسافات تُحسب حروفًا الآن. احذف كل ما ليس حرفًا أو رقمًا قبل المقارنة.",tests:[[["Level"],true],[["A man a plan a canal Panama"],true],[["nile"],false]]},
+{id:"wc",fn:"wordCount",d:2,xp:40,title:"عدّاد الكلمات",desc:"الدالة <b>wordCount</b> ترجع كائنًا فيه عدد تكرار كل كلمة، لكن القيم كلها <code>NaN</code>.",
+ code:L(["function wordCount(text) {","  const counts = {};","  for (const w of text.split(' ')) {","    counts[w] = counts[w] + 1;","  }","  return counts;","}"]),
+ hint:"ما قيمة counts[w] عند أول ظهور للكلمة؟",tests:[[["a b a"],{a:2,b:1}],[["x"],{x:1}],[["nile nile nile"],{nile:3}]]},
+{id:"money",fn:"addPrices",d:2,xp:40,title:"جمع الأسعار",desc:"الدالة <b>addPrices</b> يجب أن ترجع مجموع سعرين بدقة. حاليًا <code>addPrices(0.1, 0.2)</code> ترجع <code>0.30000000000000004</code>.",
+ code:L(["function addPrices(a, b) {","  return a + b;","}"]),
+ hint:"الأعداد العشرية تقريبية. قرّب الناتج لأقرب جزء من مئة.",tests:[[[0.1,0.2],0.3],[[1.15,2.2],3.35],[[10,5],15]]},
+{id:"num",fn:"toNumber",d:2,xp:40,title:"تحويل النص لرقم",desc:"الدالة <b>toNumber</b> تحوّل نصًا إلى رقم، وترجع <code>null</code> إذا كان النص فارغًا أو ليس رقمًا. لكنها ترجع null للنص <code>'0'</code> أيضًا.",
+ code:L(["function toNumber(s) {","  return Number(s) || null;","}"]),
+ hint:"العامل || يعتبر 0 قيمة خاطئة. افحص النص الفارغ وNaN صراحةً.",tests:[[["42"],42],[["0"],0],[[""],null],[["abc"],null],[["3.5"],3.5]]},
+{id:"clos",fn:"makeGetters",d:3,xp:55,title:"فخ المتغيرات",desc:"الدالة <b>makeGetters(n)</b> ترجع n دالة، وكل دالة رقم <code>i</code> ترجع رقمها (0 ثم 1 ثم 2). لكن كل الدوال ترجع نفس القيمة.",
+ code:L(["function makeGetters(n) {","  const fns = [];","  for (var i = 0; i < n; i++) {","    fns.push(() => i);","  }","  return fns;","}"]),
+ hint:"المتغير المعرّف بـ var مشترك بين كل دورات الحلقة. ما البديل الذي ينشئ نسخة لكل دورة؟",
+ chk:f=>[{call:"makeGetters(3).map(g => g())",got:f(3).map(g=>g()),exp:[0,1,2]},{call:"makeGetters(1).map(g => g())",got:f(1).map(g=>g()),exp:[0]}]},
+{id:"esc",fn:"escapeHtml",d:3,xp:60,title:"تهريب HTML",desc:"الدالة <b>escapeHtml</b> تحمي من حقن الشيفرة بتحويل الرموز الخاصة. النتيجة تخرج مشوهة مع النص الذي يحتوي <code>&amp;</code>.",
+ code:L(["function escapeHtml(s) {","  return s","    .replace(/</g, '&lt;')","    .replace(/>/g, '&gt;')","    .replace(/&/g, '&amp;');","}"]),
+ hint:"كل استبدال يعمل على ناتج الذي قبله. ماذا يحدث للرموز التي أضفتها للتو؟",tests:[[["<b>"],"&lt;b&gt;"],[["a & b"],"a &amp; b"],[["&lt;"],"&amp;lt;"]]},
+{id:"imm",fn:"addItem",d:3,xp:60,title:"لا تعدّل المدخلات",desc:"الدالة <b>addItem</b> يجب أن ترجع قائمة جديدة فيها العنصر الإضافي <u>دون تغيير القائمة الأصلية</u>. حاليًا تعدّل الأصل.",
+ code:L(["function addItem(list, item) {","  list.push(item);","  return list;","}"]),
+ hint:"push يغيّر المصفوفة نفسها. أنشئ مصفوفة جديدة تحتوي العناصر القديمة والجديد.",
+ chk:f=>{const a=[1,2];const r=f(a,3);return[{call:"addItem([1, 2], 3)",got:r,exp:[1,2,3]},{call:"القائمة الأصلية بعد الاستدعاء",got:a,exp:[1,2]}]}},
+
+{id:"cap",fn:"capitalize",d:1,xp:20,title:"الحرف الأول كبيرًا",desc:"الدالة <b>capitalize</b> يجب أن تحوّل أول حرف إلى كبير وتُبقي باقي النص كما هو، لكنها ترجع الحرف الأول فقط.",
+ code:L(["function capitalize(s) {","  return s[0].toUpperCase();","}"]),
+ hint:"أضف باقي النص بعد الحرف الأول. وفكّر في النص الفارغ.",tests:[[["nile"],"Nile"],[["a"],"A"],[[""],""]]},
+{id:"clamp",fn:"clamp",d:1,xp:20,title:"حصر القيمة",desc:"الدالة <b>clamp(n, min, max)</b> ترجع n بشرط ألا تقل عن min ولا تزيد على max، لكن نتيجتها خاطئة دائمًا.",
+ code:L(["function clamp(n, min, max) {","  return Math.max(max, Math.min(min, n));","}"]),
+ hint:"جرّب القيم على الورق. أي دالة يجب أن تُطبَّق على n أولًا؟",tests:[[[5,0,10],5],[[-3,0,10],0],[[15,0,10],10]]},
+{id:"dig",fn:"sumDigits",d:1,xp:25,title:"مجموع الخانات",desc:"الدالة <b>sumDigits</b> ترجع مجموع أرقام العدد، فالعدد 123 يعطي 6. لكنها ترجع نصًا غريبًا.",
+ code:L(["function sumDigits(n) {","  let total = 0;","  for (const ch of String(n)) {","    total += ch;","  }","  return total;","}"]),
+ hint:"المتغير ch نص وليس رقمًا. ماذا يفعل + مع النصوص؟",tests:[[[123],6],[[0],0],[[9045],18]]},
+{id:"range",fn:"range",d:1,xp:25,title:"نطاق الأرقام",desc:"الدالة <b>range(start, end)</b> ترجع الأرقام من start إلى end <u>بما فيها end</u>. حاليًا تنقص آخر رقم.",
+ code:L(["function range(start, end) {","  const out = [];","  for (let i = start; i < end; i++) out.push(i);","  return out;","}"]),
+ hint:"شرط الحلقة يستثني الحد الأعلى.",tests:[[[1,4],[1,2,3,4]],[[3,3],[3]],[[5,4],[]]]},
+{id:"leap",fn:"isLeapYear",d:2,xp:40,title:"السنة الكبيسة",desc:"الدالة <b>isLeapYear</b> يجب أن ترجع <code>true</code> للسنة الكبيسة. السنة 1900 تظهر كبيسة خطأً.",
+ code:L(["function isLeapYear(y) {","  return y % 4 === 0;","}"]),
+ hint:"السنوات المئوية مثل 1900 ليست كبيسة، إلا إذا قبلت القسمة على 400.",tests:[[[2024],true],[[1900],false],[[2000],true],[[2023],false]]},
+{id:"city",fn:"getCity",d:2,xp:40,title:"قراءة آمنة",desc:"الدالة <b>getCity</b> ترجع مدينة المستخدم، أو <code>'Unknown'</code> إذا لم يكن لديه عنوان. حاليًا تنهار مع مستخدم بلا عنوان.",
+ code:L(["function getCity(user) {","  return user.address.city;","}"]),
+ hint:"قراءة خاصية من undefined تسبب خطأ. ابحث عن ?. و ??.",tests:[[[{address:{city:"Khartoum"}}],"Khartoum"],[[{}],"Unknown"],[[{address:{}}],"Unknown"]]},
+{id:"chunk",fn:"chunk",d:2,xp:40,title:"تقسيم المصفوفة",desc:"الدالة <b>chunk(arr, size)</b> تقسم المصفوفة إلى مجموعات حجم كل منها size. حاليًا تتداخل المجموعات.",
+ code:L(["function chunk(arr, size) {","  const out = [];","  for (let i = 0; i < arr.length; i++) {","    out.push(arr.slice(i, i + size));","  }","  return out;","}"]),
+ hint:"بكم يجب أن يتقدم المؤشر بعد كل مجموعة؟",tests:[[[[1,2,3,4,5],2],[[1,2],[3,4],[5]]],[[[1,2,3],3],[[1,2,3]]],[[[],2],[]]]},
+{id:"rm",fn:"removeItem",d:2,xp:40,title:"حذف عنصر",desc:"الدالة <b>removeItem(list, x)</b> ترجع نسخة من القائمة بدون x. إذا لم يكن x موجودًا تبقى القائمة كما هي، لكنها تحذف آخر عنصر.",
+ code:L(["function removeItem(list, x) {","  const copy = [...list];","  copy.splice(copy.indexOf(x), 1);","  return copy;","}"]),
+ hint:"ماذا ترجع indexOf عندما لا تجد العنصر؟ وماذا تفعل splice بهذه القيمة؟",tests:[[[[1,2,3],2],[1,3]],[[[1,2,3],9],[1,2,3]],[[["a","b"],"a"],["b"]]]},
+{id:"price",fn:"formatPrice",d:2,xp:40,title:"عرض السعر",desc:"الدالة <b>formatPrice</b> ترجع السعر <u>نصًا</u> بخانتين عشريتين دائمًا، مثل <code>'5.00'</code>. حاليًا ترجع رقمًا.",
+ code:L(["function formatPrice(n) {","  return Math.round(n * 100) / 100;","}"]),
+ hint:"الأرقام لا تحتفظ بالأصفار اليمنى. هناك دالة تنسّق الرقم كنص بعدد خانات ثابت.",tests:[[[5],"5.00"],[[2.5],"2.50"],[[1234.567],"1234.57"]]},
+{id:"mail",fn:"isValidEmail",d:2,xp:45,title:"فحص البريد",desc:"الدالة <b>isValidEmail</b> تقبل نصوصًا كثيرة خاطئة، مثل <code>abc@</code>. اجعلها تتطلب اسمًا قبل @ ونطاقًا فيه نقطة بعده، بدون مسافات.",
+ code:L(["function isValidEmail(s) {","  return s.includes('@');","}"]),
+ hint:"استخدم تعبيرًا نمطيًا يتحقق من ثلاثة أجزاء: ما قبل @، ثم نطاق، ثم نقطة وامتداد.",tests:[[["a@b.com"],true],[["abc"],false],[["a@b"],false],[["@b.com"],false],[["a b@c.com"],false]]},
+{id:"days",fn:"daysBetween",d:2,xp:45,title:"الأيام بين تاريخين",desc:"الدالة <b>daysBetween(a, b)</b> ترجع عدد الأيام بين تاريخين نصيين مثل <code>2024-01-01</code>. حاليًا ترجع رقمًا ضخمًا.",
+ code:L(["function daysBetween(a, b) {","  return Math.abs(new Date(b) - new Date(a));","}"]),
+ hint:"طرح التواريخ يعطي مللي ثانية. كم مللي ثانية في اليوم الواحد؟",tests:[[["2024-01-01","2024-01-11"],10],[["2024-03-01","2024-02-28"],2],[["2024-05-05","2024-05-05"],0]]},
+{id:"flat",fn:"flatten",d:3,xp:55,title:"تسطيح عميق",desc:"الدالة <b>flatten</b> يجب أن تسطّح المصفوفات المتداخلة بكل مستوياتها. حاليًا تسطّح مستوى واحدًا فقط.",
+ code:L(["function flatten(arr) {","  return arr.flat();","}"]),
+ hint:"راجع معامل الدالة flat. ما قيمته الافتراضية؟",tests:[[[[1,[2,[3,[4]]]]],[1,2,3,4]],[[[]],[]],[[[[1],[2]]],[1,2]]]},
+{id:"clone",fn:"deepClone",d:3,xp:60,title:"نسخة حقيقية",desc:"الدالة <b>deepClone</b> يجب أن ترجع نسخة مستقلة تمامًا من الكائن. حاليًا تعديل الكائنات الداخلية في النسخة يغيّر الأصل.",
+ code:L(["function deepClone(obj) {","  return { ...obj };","}"]),
+ hint:"الانتشار ينسخ المستوى الأول فقط. ابحث عن طريقة للنسخ العميق.",
+ chk:f=>{const a={x:{y:1}};const b=f(a);b.x.y=2;return[{call:"تعديل b.x.y لا يغيّر الأصل a.x.y",got:a.x.y,exp:1},{call:"النسخة تحمل نفس القيم",got:f({n:1,x:{y:5}}),exp:{n:1,x:{y:5}}}]}},
+{id:"cnt",fn:"makeCounter",d:3,xp:60,title:"عدّاد يتذكر",desc:"الدالة <b>makeCounter</b> ترجع دالة عدّاد: أول نداء يعطي 1 ثم 2 ثم 3. لكنها تعطي 1 دائمًا.",
+ code:L(["function makeCounter() {","  return function () {","    let count = 0;","    count++;","    return count;","  };","}"]),
+ hint:"أين يجب أن يُعرَّف المتغير ليبقى محفوظًا بين النداءات؟",
+ chk:f=>{const c=f();return[{call:"ثلاث نداءات متتالية للعدّاد",got:[c(),c(),c()],exp:[1,2,3]}]}},
+
+{id:"cpos",fn:"countPositives",d:1,xp:25,title:"ثابت لا يتغير",desc:"الدالة <b>countPositives</b> تعدّ الأرقام الموجبة. عند تشغيلها ظهرت الرسالة:<br><code>TypeError: Assignment to constant variable.</code>",
+ code:L(["function countPositives(arr) {","  const count = 0;","  for (const x of arr) {","    if (x > 0) count++;","  }","  return count;","}"]),
+ hint:"الرسالة تقول إنك تغيّر متغيرًا معرَّفًا بـ const. ما البديل؟",tests:[[[[1,-2,3]],2],[[[]],0],[[[-1,-5]],0]]},
+{id:"dbl",fn:"doubleValues",d:2,xp:40,title:"ليست دالة",desc:"الدالة <b>doubleValues</b> تقبل رقمًا واحدًا أو مصفوفة وترجع القيم مضاعفة دائمًا في مصفوفة. مع الرقم ظهرت الرسالة:<br><code>TypeError: input.map is not a function</code>",
+ code:L(["function doubleValues(input) {","  return input.map(x => x * 2);","}"]),
+ hint:"map موجودة في المصفوفات فقط. حوّل المدخل إلى مصفوفة قبل استخدامها.",tests:[[[3],[6]],[[[1,2]],[2,4]],[[[]],[]]]},
+{id:"fname",fn:"findName",d:2,xp:40,title:"مستخدم غير موجود",desc:"الدالة <b>findName(users, id)</b> ترجع اسم المستخدم، أو <code>'Guest'</code> إذا لم يوجد. مع رقم غير موجود ظهرت الرسالة:<br><code>TypeError: Cannot read properties of undefined (reading 'name')</code>",
+ code:L(["function findName(users, id) {","  return users.find(u => u.id === id).name;","}"]),
+ hint:"find ترجع undefined عند عدم الوجود. افحص النتيجة قبل قراءة name.",tests:[[[[{id:1,name:"Ali"}],1],"Ali"],[[[{id:1,name:"Ali"}],5],"Guest"],[[[],1],"Guest"]]},
+{id:"cfg",fn:"parseConfig",d:2,xp:40,title:"JSON تالف",desc:"الدالة <b>parseConfig</b> تقرأ الإعدادات من نص JSON، وترجع كائنًا فارغًا <code>{}</code> إذا كان النص تالفًا. مع نص تالف ظهرت الرسالة:<br><code>SyntaxError: Unexpected token o in JSON at position 1</code>",
+ code:L(["function parseConfig(text) {","  return JSON.parse(text);","}"]),
+ hint:"JSON.parse ترمي استثناءً عند الخطأ. كيف تلتقط الاستثناء وتتابع؟",tests:[[['{"a":1}'],{a:1}],[["not json"],{}],[[""],{}]]},
+{id:"vals",fn:"sumValues",d:2,xp:40,title:"ليس قابلًا للتكرار",desc:"الدالة <b>sumValues</b> تجمع قيم كائن مثل <code>{a: 1, b: 2}</code>. عند تشغيلها ظهرت الرسالة:<br><code>TypeError: obj is not iterable</code>",
+ code:L(["function sumValues(obj) {","  let total = 0;","  for (const v of obj) {","    total += v;","  }","  return total;","}"]),
+ hint:"for...of تعمل على المصفوفات والنصوص لا على الكائنات العادية. كيف تحصل على قيم الكائن كمصفوفة؟",tests:[[[{a:1,b:2}],3],[[{}],0],[[{x:10,y:-4,z:1}],7]]},
+{id:"uname",fn:"getUserName",d:3,xp:55,title:"نسيت await",desc:"الدالة <b>getUserName(fetchUser, id)</b> تجلب مستخدمًا بطريقة غير متزامنة وترجع اسمه، لكنها ترجع <code>undefined</code> بدون أي رسالة خطأ.",
+ code:L(["async function getUserName(fetchUser, id) {","  const user = fetchUser(id);","  return user.name;","}"]),
+ hint:"fetchUser ترجع Promise وليس المستخدم نفسه. ماذا يجب أن تفعل قبل قراءة name؟",
+ chk:f=>[{call:"await getUserName(fetchUser, 7)",got:f(id=>Promise.resolve({name:"U"+id}),7),exp:"U7"}]},
+{id:"ltot",fn:"loadTotal",d:3,xp:55,title:"سلسلة مقطوعة",desc:"الدالة <b>loadTotal(fetchPrices)</b> ترجع Promise بمجموع الأسعار. لكن النتيجة النهائية دائمًا <code>undefined</code>.",
+ code:L(["function loadTotal(fetchPrices) {","  return fetchPrices().then(prices => {","    prices.reduce((a, b) => a + b, 0);","  });","}"]),
+ hint:"الدالة السهمية التي لها أقواس {} لا ترجع شيئًا من تلقاء نفسها.",
+ chk:f=>[{call:"await loadTotal(() => Promise.resolve([1, 2, 3]))",got:f(()=>Promise.resolve([1,2,3])),exp:6}]},
+{id:"mapa",fn:"mapAsync",d:3,xp:65,title:"forEach لا تنتظر",desc:"الدالة <b>mapAsync(nums, fn)</b> تطبّق دالة غير متزامنة على كل عنصر وترجع النتائج بنفس الترتيب. لكنها ترجع مصفوفة فارغة.",
+ code:L(["async function mapAsync(nums, fn) {","  const out = [];","  nums.forEach(async (n) => {","    out.push(await fn(n));","  });","  return out;","}"]),
+ hint:"forEach تتجاهل الوعود التي ترجعها الدالة. جرّب Promise.all مع map.",
+ chk:f=>[{call:"await mapAsync([1, 2, 3], n => delay(n * 2))",got:f([1,2,3],n=>new Promise(r=>setTimeout(()=>r(n*2),20))),exp:[2,4,6]}]},
+];
+const META={sum:["حلقات","حلقة تمر على فهرس زائد يقرأ undefined، فيتحول المجموع إلى NaN. آخر فهرس صحيح هو length - 1، أي استخدم < بدل <=."],
+even:["منطق","باقي قسمة العدد الزوجي على 2 هو صفر. عكس الشرط يعكس كل النتائج."],
+rev:["نصوص","reverse تعمل على المصفوفات فقط. بعد split وreverse تحتاج join لإرجاع نص."],
+max:["حالات حدّية","البدء من 0 يفترض أن في المصفوفة رقمًا موجبًا. ابدأ من أول عنصر أو من -Infinity."],
+vow:["تعبيرات نمطية","match بدون العلامة g ترجع أول تطابق فقط. العلامة g تبحث في النص كله."],
+fact:["استدعاء ذاتي","كل دالة ذاتية تحتاج حالة توقف تغطي كل المدخلات. المضروب للصفر يساوي 1، وبدونها يستمر الاستدعاء حتى تفيض الذاكرة."],
+last:["مصفوفات","الفهارس تبدأ من الصفر، فآخر عنصر فهرسه length - 1. هذا من أشهر أخطاء الإزاحة بواحد (off-by-one)."],
+same:["أنواع البيانات","== يحوّل الأنواع قبل المقارنة فتنتج نتائج مفاجئة مثل 0 == false. استخدم === دائمًا إلا لسبب واضح."],
+fizz:["منطق","ترتيب الشروط مهم: الشرط الأكثر تحديدًا يجب أن يأتي أولًا، وإلا يلتقط شرط أعم الحالة قبله."],
+avg:["حالات حدّية","القسمة على length الفارغ تعطي NaN. افحص الحالات الحدّية مثل المصفوفة الفارغة قبل أي عملية حسابية."],
+uniq:["مصفوفات","indexOf ترجع أول موضع للعنصر، فالعنصر يكون في أول ظهور له حين يساوي موضعه الحالي. هذه هي الطريقة الكلاسيكية للإزالة، والبديل الأسرع [...new Set(arr)]."],
+sortn:["مصفوفات","sort بدون دالة مقارنة ترتب كنصوص فيأتي 10 قبل 9. مرّر (a, b) => a - b. تنبيه: sort تعدّل المصفوفة الأصلية."],
+pal:["نصوص","نظّف النص قبل المقارنة: حوّله لأحرف صغيرة واحذف غير الحروف والأرقام بتعبير نمطي."],
+wc:["كائنات","خاصية غير موجودة قيمتها undefined، وundefined + 1 تساوي NaN. هيّئ القيمة الابتدائية بـ (counts[w] || 0) + 1."],
+money:["الأعداد العشرية","الأعداد العشرية تُخزَّن تقريبيًا في الحاسوب (0.1 + 0.2 ≠ 0.3). في التطبيقات المالية قرّب النتيجة أو اعمل بأصغر وحدة كأعداد صحيحة."],
+num:["أنواع البيانات","|| يعامل 0 والنص الفارغ وNaN كلها كقيمة خاطئة. استخدم فحوصات صريحة أو ?? عندما يكون الصفر قيمة صالحة."],
+clos:["نطاق المتغيرات","var له نطاق الدالة لا الكتلة، فكل الدوال تشارك متغيرًا واحدًا. let ينشئ متغيرًا جديدًا في كل دورة."],
+esc:["أمان","ترتيب الاستبدال مهم: استبدل & أولًا وإلا هرّبت الرموز التي أضفتها للتو. هذا أساس الحماية من XSS."],
+imm:["الثبات","تعديل المدخلات يسبب أخطاء يصعب تتبعها لأن مكانًا آخر يستخدم نفس المصفوفة. أرجع نسخة جديدة: [...list, item]."],
+cap:["نصوص","s[0] على نص فارغ يعطي undefined فيحدث خطأ عند استدعاء دالة عليه. تحقق من الحالات الحدّية، واستخدم slice(1) لباقي النص."],
+clamp:["منطق","عند تركيب دوال، تتبّع القيمة بأمثلة على الورق. ترتيب max وmin هو الفرق بين نتيجة صحيحة ونتيجة ثابتة خاطئة."],
+dig:["أنواع البيانات","+ مع النصوص تدمج ولا تجمع. حوّل صراحةً بـ Number(ch) قبل الحساب."],
+range:["حلقات","اسأل نفسك دائمًا: هل الحد الأعلى مشمول أم مستثنى؟ ثم اختبر عند الحدود."],
+leap:["منطق","السنة الكبيسة تقبل القسمة على 4، إلا المئوية فلا تكون كبيسة إلا إذا قبلت القسمة على 400. القواعد ذات الاستثناءات تحتاج اختبارًا لكل استثناء."],
+city:["كائنات","قراءة خاصية من undefined توقف البرنامج. ?. تقرأ بأمان وترجع undefined، و?? تضع قيمة بديلة."],
+chunk:["حلقات","الخطوة في الحلقة ليست دائمًا 1. هنا نتقدم بمقدار size حتى لا تتداخل المجموعات."],
+rm:["مصفوفات","indexOf ترجع -1 عند عدم الوجود، وsplice مع -1 تحذف آخر عنصر. افحص هذه القيمة قبل أي عملية تعتمد على الفهرس، أو استخدم filter."],
+price:["الأعداد العشرية","الأرقام لا تحتفظ بالأصفار اليمنى. للعرض استخدم toFixed(2) التي ترجع نصًا منسقًا، وللحساب أبقِ القيمة رقمًا."],
+mail:["تعبيرات نمطية","فحص وجود @ فقط يقبل كثيرًا من المدخلات الخاطئة. تحقق من الأجزاء الثلاثة، وفي التطبيقات الحقيقية أكّد البريد برسالة تفعيل أيضًا."],
+days:["التواريخ","طرح تاريخين يعطي مللي ثانية، واليوم 86400000 منها. انتبه للمناطق الزمنية والتوقيت الصيفي عند وجود وقت داخل التاريخ."],
+flat:["مصفوفات","كثير من الدوال لها معاملات افتراضية تغيّر سلوكها. flat() تسطّح مستوى واحدًا، وflat(Infinity) تسطّح كل المستويات."],
+clone:["الثبات","الانتشار {...obj} ينسخ المستوى الأول فقط، أما الكائنات الداخلية فتبقى مشتركة. للنسخة العميقة استخدم structuredClone()."],
+cnt:["نطاق المتغيرات","المتغير داخل الدالة الداخلية يُنشأ من جديد في كل نداء. لحفظ الحالة عرّفه في النطاق الخارجي لتحتفظ به الـ closure."],
+cpos:["قراءة الأخطاء","رسالة Assignment to constant variable تعني أنك غيّرت متغيرًا معرَّفًا بـ const. استخدم let لما سيتغير، وconst لما لا يتغير."],
+dbl:["قراءة الأخطاء","رسالة is not a function تعني أنك تستدعي شيئًا ليس دالة على هذا النوع. تحقق من نوع القيمة بـ Array.isArray أو typeof قبل استدعاء دوال نوع معين."],
+fname:["قراءة الأخطاء","رسالة Cannot read properties of undefined من أكثر الرسائل شيوعًا. السبب أن قيمة قبل النقطة غير موجودة، وغالبًا نتيجة find أو دالة رجعت undefined. افحصها أو استخدم ?."],
+cfg:["قراءة الأخطاء","أي مدخل من خارج برنامجك (ملف، شبكة، مستخدم) غير موثوق. JSON.parse ترمي استثناءً عند الخطأ، فغلّفها بـ try/catch وحدّد قيمة بديلة."],
+vals:["قراءة الأخطاء","رسالة is not iterable تعني أن for...of تلقت شيئًا لا يمكن المرور عليه. استخدم Object.values أو Object.entries مع الكائنات."],
+uname:["غير متزامن","الدالة التي ترجع Promise تحتاج await قبل استخدام قيمتها، وإلا تعمل على الوعد نفسه وتحصل على undefined بدون أي رسالة خطأ."],
+ltot:["غير متزامن","الدالة السهمية بأقواس {} تحتاج return صريحًا، وبدونه ترجع undefined وتنكسر سلسلة then. هذا أحد أسباب أخطاء غياب القيمة في الشيفرة غير المتزامنة."],
+mapa:["غير متزامن","forEach لا تنتظر الدوال غير المتزامنة فتنتهي الدالة قبل اكتمال العمل. استخدم Promise.all(arr.map(fn)) أو for...of مع await."]};
+const PY=[
+{id:"pcolon",kind:"mc",lang:"py",d:1,xp:20,cat:"بايثون",title:"نقطتان ناقصتان",desc:`ما الذي سيمنع تشغيل هذه الشيفرة؟`,
+ code:`def greet(name)
+    print("Hello " + name)`,
+ opts:[`ينقص الرمز <code>:</code> في نهاية سطر <code>def</code>`,`الدالة تحتاج <code>return</code>`,`<code>print</code> لا تقبل نصًا`,`<code>name</code> كلمة محجوزة`],ans:0,
+ hint:"كل كتلة في بايثون تبدأ بسطر ينتهي برمز معيّن.",
+ why:`كل سطر يفتح كتلة (<code>def</code> و<code>if</code> و<code>for</code> و<code>while</code> و<code>class</code>) ينتهي بنقطتين <code>:</code>، وتأتي الكتلة بعده بإزاحة. غياب النقطتين يعطي SyntaxError.`},
+{id:"peq",kind:"mc",lang:"py",d:1,xp:20,cat:"بايثون",title:"علامة المساواة",desc:`ما سبب الخطأ في هذا الشرط؟`,
+ code:`age = 18
+if age = 18:
+    print("adult")`,
+ opts:[`استُخدمت <code>=</code> (إسناد) بدل <code>==</code> (مقارنة)`,`المتغير <code>age</code> يجب أن يكون نصًا`,`<code>print</code> تحتاج قوسين مزدوجين`,`<code>if</code> لا تقبل أرقامًا`],ans:0,
+ hint:"هل نريد هنا أن نعطي قيمة، أم أن نقارن؟",
+ why:`<code>=</code> تعطي قيمة لمتغير، و<code>==</code> تقارن قيمتين. استخدام الإسناد داخل شرط <code>if</code> يعطي SyntaxError في بايثون.`},
+{id:"pstr",kind:"mc",lang:"py",d:1,xp:25,cat:"بايثون",title:"نص مع رقم",desc:`تظهر الرسالة <code>TypeError: can only concatenate str (not "int") to str</code>. ما معناها؟`,
+ code:`count = 3
+print("Items: " + count)`,
+ opts:[`لا يمكن جمع نص مع رقم مباشرة، يجب تحويل أحدهما`,`المتغير <code>count</code> غير معرَّف`,`<code>print</code> لا تعمل مع الأرقام`,`يجب أن يكون النص بعلامتي اقتباس مفردتين`],ans:0,
+ hint:"ما نوع كل من الطرفين حول علامة +؟",
+ why:`<code>+</code> تجمع نصًا مع نص، أو رقمًا مع رقم فقط. حوّل الرقم بـ <code>str(count)</code> أو استخدم f-string: <code>f"Items: {count}"</code>.`},
+{id:"pidx",kind:"mc",lang:"py",d:1,xp:25,cat:"بايثون",title:"خارج الحدود",desc:`ما الخطأ الذي سيظهر في هذه الشيفرة؟`,
+ code:`items = [10, 20, 30]
+for i in range(len(items) + 1):
+    print(items[i])`,
+ opts:[`<code>IndexError</code> بسبب <code>+ 1</code> في <code>range</code>`,`<code>KeyError</code> بسبب <code>items</code>`,`<code>NameError</code> بسبب <code>i</code>`,`لا خطأ، تُطبع الأرقام الثلاثة`],ans:0,
+ hint:"كم عنصرًا في القائمة؟ وإلى أي فهرس سيصل i؟",
+ why:`فهارس القائمة من 0 إلى <code>len - 1</code>، و<code>range(n)</code> تنتهي عند n-1، فإضافة 1 تعطي فهرسًا غير موجود. والأفضل أصلًا <code>for item in items</code>.`},
+{id:"pret",kind:"mc",lang:"py",d:1,xp:25,cat:"بايثون",title:"نسيت return",desc:`ماذا تطبع هذه الشيفرة؟`,
+ code:`def square(x):
+    x * x
+
+print(square(4))`,
+ opts:[`<code>16</code>`,`<code>None</code>`,`<code>TypeError</code>`,`<code>4</code>`],ans:1,
+ hint:"هل ترجع الدالة شيئًا بشكل صريح؟",
+ why:`الدالة بدون <code>return</code> ترجع <code>None</code> تلقائيًا، حتى لو حسبت قيمة داخلها. أضف <code>return x * x</code>.`},
+{id:"pinput",kind:"mc",lang:"py",d:1,xp:25,cat:"بايثون",title:"الإدخال نص دائمًا",desc:`أدخل المستخدم 2 ثم 3. ماذا تطبع هذه الشيفرة؟`,
+ code:`a = input()
+b = input()
+print(a + b)`,
+ opts:[`<code>5</code>`,`<code>23</code>`,`<code>TypeError</code>`,`<code>None</code>`],ans:1,
+ hint:"ما نوع القيمة التي ترجعها input؟",
+ why:`<code>input()</code> ترجع نصًا دائمًا، وجمع نصين يدمجهما فيصبح الناتج 23. حوّل بـ <code>int(input())</code> قبل الحساب.`},
+{id:"pstrimm",kind:"mc",lang:"py",d:2,xp:35,cat:"بايثون",title:"النصوص لا تتغير",desc:`ما نتيجة تشغيل هذه الشيفرة؟`,
+ code:`s = "nile"
+s[0] = "N"
+print(s)`,
+ opts:[`<code>TypeError</code> لأن النصوص لا تُعدَّل بالفهرس`,`تطبع <code>Nile</code>`,`تطبع <code>nile</code>`,`<code>IndexError</code>`],ans:0,
+ hint:"هل يمكن تغيير حرف داخل نص موجود؟",
+ why:`النصوص في بايثون غير قابلة للتعديل (immutable). أنشئ نصًا جديدًا: <code>s = "N" + s[1:]</code>.`},
+{id:"pprec",kind:"mc",lang:"py",d:2,xp:35,cat:"بايثون",title:"أولوية العمليات",desc:`نريد متوسط 4 و8 فنتوقع <code>6.0</code>، لكن تظهر قيمة أخرى. لماذا؟`,
+ code:`def average(a, b):
+    return a + b / 2
+
+print(average(4, 8))`,
+ opts:[`القسمة تُنفَّذ قبل الجمع، فنحتاج أقواسًا <code>(a + b) / 2</code>`,`بايثون تقرّب النتيجة لأقرب عدد صحيح`,`<code>b</code> يجب أن يكون نصًا`,`استخدمنا <code>return</code> بدل <code>print</code>`],ans:0,
+ hint:"أي العمليتين تُحسب أولًا: الجمع أم القسمة؟",
+ why:`القسمة والضرب أعلى أولوية من الجمع والطرح، فالناتج هنا 8.0. استخدم الأقواس لتوضيح الترتيب الذي تريده.`},
+{id:"pkey",kind:"mc",lang:"py",d:2,xp:35,cat:"بايثون",title:"مفتاح غير موجود",desc:`ما الذي سيظهر؟ وما أفضل طريقة لإرجاع قيمة بديلة؟`,
+ code:`prices = {"tea": 5, "coffee": 8}
+print(prices["juice"])`,
+ opts:[`<code>KeyError</code> والحل <code>prices.get("juice", 0)</code>`,`<code>IndexError</code> والحل <code>prices[0]</code>`,`<code>NameError</code> والحل تعريف <code>juice</code>`,`لا خطأ، تُرجع <code>None</code>`],ans:0,
+ hint:"ماذا يحدث عند قراءة مفتاح غير موجود بالأقواس المربعة؟",
+ why:`القراءة بالأقواس المربعة ترمي KeyError إذا لم يوجد المفتاح، أما <code>get(key, default)</code> فترجع قيمة بديلة بدون خطأ.`},
+{id:"pis",kind:"mc",lang:"py",d:2,xp:40,cat:"بايثون",title:"== أم is",desc:`ماذا تطبع هذه الشيفرة؟`,
+ code:`a = [1, 2]
+b = [1, 2]
+print(a == b)
+print(a is b)`,
+ opts:[`<code>True</code> ثم <code>True</code>`,`<code>True</code> ثم <code>False</code>`,`<code>False</code> ثم <code>False</code>`,`<code>False</code> ثم <code>True</code>`],ans:1,
+ hint:"هل القائمتان نفس الكائن في الذاكرة، أم نسختان متساويتان؟",
+ why:`<code>==</code> تقارن القيم، أما <code>is</code> فتقارن الهوية: هل هما نفس الكائن؟ استخدم <code>is</code> مع <code>None</code> فقط، مثل <code>if x is None</code>.`},
+{id:"pdef",kind:"mc",lang:"py",d:3,xp:55,cat:"بايثون",title:"القيمة الافتراضية المتغيرة",desc:`ماذا تطبع هذه الشيفرة؟`,
+ code:`def add_item(item, items=[]):
+    items.append(item)
+    return items
+
+print(add_item(1))
+print(add_item(2))`,
+ opts:[`<code>[1]</code> ثم <code>[2]</code>`,`<code>[1]</code> ثم <code>[1, 2]</code>`,`<code>[1, 2]</code> ثم <code>[1, 2]</code>`,`خطأ أثناء التشغيل`],ans:1,
+ hint:"متى تُنشأ القائمة الافتراضية: عند كل نداء أم مرة واحدة؟",
+ why:`القيمة الافتراضية تُنشأ مرة واحدة عند تعريف الدالة وتُشارك بين كل النداءات. استخدم <code>items=None</code> ثم <code>if items is None: items = []</code> داخل الدالة.`},
+{id:"pscope",kind:"mc",lang:"py",d:3,xp:55,cat:"بايثون",title:"نطاق المتغير",desc:`ماذا يحدث عند تشغيل هذه الشيفرة؟`,
+ code:`total = 0
+
+def add(n):
+    total += n
+
+add(5)`,
+ opts:[`<code>UnboundLocalError</code> لأن <code>total</code> تُعامل كمتغير محلي داخل الدالة`,`تصبح <code>total</code> تساوي 5`,`<code>NameError</code> لأن <code>add</code> غير معرَّفة`,`<code>SyntaxError</code> في سطر <code>def</code>`],ans:0,
+ hint:"عندما تُسند قيمة لاسم داخل دالة، ما نطاق هذا الاسم؟",
+ why:`الإسناد داخل الدالة يجعل الاسم محليًا، فتحاول الدالة قراءة total المحلي قبل أن يُعرَّف. الأفضل أن ترجع القيمة من الدالة، و<code>global</code> للضرورة فقط.`},
+{id:"pmut",kind:"mc",lang:"py",d:3,xp:55,cat:"بايثون",title:"الحذف أثناء التكرار",desc:`نريد حذف الأعداد الزوجية، لكن النتيجة ليست قائمة فارغة. ماذا تطبع؟ ولماذا؟`,
+ code:`nums = [2, 4, 6, 8]
+for n in nums:
+    if n % 2 == 0:
+        nums.remove(n)
+print(nums)`,
+ opts:[`<code>[4, 8]</code> لأن حذف عنصر أثناء التكرار يغيّر الفهارس فيُتخطى عنصر`,`<code>[]</code> كما هو متوقع`,`<code>[2, 4, 6, 8]</code> لأن <code>remove</code> لا تعمل`,`<code>ValueError</code>`],ans:0,
+ hint:"ماذا يحدث لمواضع العناصر بعد حذف العنصر الأول؟",
+ why:`عند حذف عنصر من قائمة أثناء المرور عليها تنزاح العناصر ويتخطى التكرار بعضها. أنشئ قائمة جديدة بدلًا من التعديل: <code>[n for n in nums if n % 2 != 0]</code>.`},
+{id:"pcopy",kind:"mc",lang:"py",d:3,xp:55,cat:"بايثون",title:"النسخة السطحية",desc:`ماذا تطبع هذه الشيفرة؟`,
+ code:`a = [[0, 0], [0, 0]]
+b = a.copy()
+b[0][0] = 9
+print(a[0][0])`,
+ opts:[`<code>0</code>`,`<code>9</code>`,`<code>[0, 0]</code>`,`خطأ أثناء التشغيل`],ans:1,
+ hint:"هل تنسخ copy القوائم الداخلية أم تشاركها؟",
+ why:`<code>copy()</code> تنسخ المستوى الأول فقط، فالقوائم الداخلية مشتركة بين النسختين. للنسخة العميقة استخدم <code>copy.deepcopy(a)</code>.`}
+];
+CH.push(...PY);
+const TR=[
+{id:"t1",t:"البداية",d:"أساسيات الجافاسكربت: حلقات ومنطق ونصوص.",ic:"M5 12h14M13 6l6 6-6 6",ids:["sum","even","rev","last","same","fizz","cap","clamp","dig","range"]},
+{id:"t2",t:"قارئ الأخطاء",d:"تعلّم قراءة رسائل الأخطاء الحقيقية والوصول إلى سببها.",ic:"M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",ids:["cpos","dbl","fname","vals","cfg","city","avg","rm"]},
+{id:"t3",t:"فخاخ البيانات",d:"حالات حدّية وأنواع وأرقام وتواريخ تخدع المبرمجين.",ic:"M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7",ids:["max","uniq","sortn","wc","pal","vow","money","price","num","leap","days","chunk"]},
+{id:"t4",t:"المتقدّم",d:"نطاق المتغيرات وغير المتزامن والثبات والأمان.",ic:"M13 2L4 14h7l-1 8 9-12h-7z",ids:["clos","cnt","imm","clone","flat","esc","fact","mail","uname","ltot","mapa"]},
+{id:"t5",t:"بايثون: الأساسيات",d:"اقرأ شيفرة بايثون وحدّد الخطأ، من أخطاء الصياغة إلى أخطاء النوع والفهرس.",ic:"M8 6l-5 6 5 6M16 6l5 6-5 6",ids:["pcolon","peq","pstr","pidx","pret","pinput","pstrimm","pprec","pkey"]},
+{id:"t6",t:"بايثون: الفخاخ",d:"سلوكيات بايثون المفاجئة التي توقع حتى المحترفين.",ic:"M12 3l9 16H3z",ids:["pis","pdef","pscope","pmut","pcopy"]}];
+CH.forEach(c=>{if(META[c.id]){c.cat=META[c.id][0];c.why=META[c.id][1]}});
+CH.sort((x,y)=>x.d-y.d);
+const RANKS=["متدرّب","مصحّح","صائد أخطاء","مهندس النيل","حارس الشيفرة"];
+const AC=[
+{id:"first",t:"أول إصلاح",s:"أصلح أول خطأ",g:1,p:s=>s.n,ic:"M5 13l4 4L19 7"},
+{id:"half",t:"في منتصف النهر",s:"أصلح 3 أخطاء",g:3,p:s=>s.n,ic:"M3 12c3-4 6 4 9 0s6 4 9 0"},
+{id:"all",t:"سيّد النيل",s:"أصلح كل التحديات",g:CH.length,p:s=>s.n,ic:"M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"},
+{id:"clean",t:"بدون تلميح",s:"أصلح 3 أخطاء دون استخدام تلميح",g:3,p:s=>s.clean,ic:"M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10c1 1 1 2 1 3h6c0-1 0-2 1-3a6 6 0 0 0-4-10z"},
+{id:"acc",t:"تصويب دقيق",s:"أصلح 3 أخطاء من أول محاولة",g:3,p:s=>s.first,ic:"M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0"},
+{id:"str3",t:"ثلاثة أيام متتالية",s:"حافظ على سلسلة 3 أيام",g:3,p:s=>s.streak,ic:"M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"},
+{id:"ten",t:"عشرة إصلاحات",s:"أصلح 10 أخطاء",g:10,p:s=>s.n,ic:"M12 3v18M3 12h18"},
+{id:"twenty",t:"عشرون إصلاحًا",s:"أصلح 20 خطأً",g:20,p:s=>s.n,ic:"M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"},
+{id:"track",t:"خريج مسار",s:"أنهِ مسارًا كاملًا",g:1,p:s=>s.tdone,ic:"M5 21V4M5 4h11l-2 4 2 4H5"},
+{id:"hard",t:"قاهر الصعب",s:"أصلح تحديًا صعبًا",g:1,p:s=>s.hard,ic:"M4 20l6-14 4 8 2-4 4 10z"}
+];
+const MORE=[{n:"طقس السودان",d:"طقس دقيق لمدن السودان",u:""},{n:"Kairos",d:"تطبيق التركيز وإدارة الوقت",u:""}];
+
+/* ===== State ===== */
+const K="debugnile.v1";
+let S=JSON.parse(localStorage.getItem(K)||"null")||{solved:{},att:0,ok:0,days:{},xp:0,unl:[],set:{fs:14,hap:true,snd:true}};
+const save=()=>localStorage.setItem(K,JSON.stringify(S));
+const $=id=>document.getElementById(id);
+const dk=d=>{const x=new Date(d);return x.getFullYear()+"-"+(x.getMonth()+1)+"-"+x.getDate()};
+const ico=p=>`<svg viewBox="0 0 24 24"><path d="${p}"/></svg>`;
+const ar=n=>String(n).replace(/\d/g,d=>"٠١٢٣٤٥٦٧٨٩"[d]);
+function streak(){let n=0,d=new Date();if(!S.days[dk(d)])d.setDate(d.getDate()-1);while(S.days[dk(d)]){n++;d.setDate(d.getDate()-1)}return n}
+function agg(){const v=Object.values(S.solved);return{n:v.length,clean:v.filter(x=>!x.h).length,first:v.filter(x=>x.a===1).length,hard:CH.filter(c=>c.d===3&&S.solved[c.id]).length,streak:streak(),tdone:TR.filter(t=>t.ids.every(id=>S.solved[id])).length}}
+function lvl(){const l=Math.floor(S.xp/100);return{l:l+1,p:S.xp%100,r:RANKS[Math.min(l,RANKS.length-1)]}}
+const buzz=n=>{if(S.set.hap&&navigator.vibrate)navigator.vibrate(n)};
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2600)}
+function beep(ok){if(!S.set.snd)return;try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=ok?660:200;o.type="sine";g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.25);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.25)}catch(e){}}
+
+function nextUn(){
+  if(curTrack){const t=TR.find(x=>x.id===curTrack);return t.ids.map(id=>CH.find(c=>c.id===id)).find(c=>c&&!S.solved[c.id])||null}
+  return CH.find(c=>!S.solved[c.id]&&c.lang!=="py")||CH.find(c=>!S.solved[c.id])||null}
+/* ===== Views ===== */
+let tab="home",filt="all";
+const TABS=[["home","الرئيسية","M4 11l8-7 8 7v9H4z"],["stats","الإحصائيات","M5 20V10M12 20V4M19 20v-7"],["ach","الإنجازات","M8 4h8v5a4 4 0 0 1-8 0zM6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3M12 13v4M8 20h8"],["set","الإعدادات","M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-1-3-2 .5-1.5-1.5.5-2-3-1-1 2h-2l-1-2-3 1 .5 2L5.5 8 3.5 8.5l-1 3 2 1v2l-2 1 1 3 2-.5L7 20l-.5 2 3 1 1-2h2l1 2 3-1-.5-2 1.5-1.5 2 .5 1-3-2-1z"]];
+function nav(){$("nav").innerHTML=TABS.map(t=>`<button class="${t[0]===tab?"on":""}" data-t="${t[0]}">${ico(t[2])}<span>${t[1]}</span></button>`).join("")}
+function diff(d){return[1,2,3].map(i=>`<i class="${i<=d?"f":""}"></i>`).join("")}
+function home(){
+  const v=lvl(),a=agg();
+  curTrack=null;const next=nextUn();
+  let h=`<div class="hero"><div class="rank">${v.r}</div><div class="lvl">المستوى ${ar(v.l)}</div>
+  <div class="river"><i id="rv"></i></div><div class="row"><span>${ar(v.p)} / ١٠٠ نقطة</span><span>${ar(S.xp)} نقطة كلية</span></div></div>
+  <div class="chips"><div class="chip"><b>${ar(a.n)}/${ar(CH.length)}</b><small>تم إصلاحها</small></div><div class="chip"><b>${ar(a.streak)}</b><small>أيام متتالية</small></div></div>`;
+  h+=`<button class="card" data-kit style="margin-top:14px"><div class="dot">${ico("M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z")}</div><div class="t"><b>حقيبة المنقّح</b><small>منهجية الحل وقاموس رسائل الأخطاء</small></div></button>`;
+  if(next)h+=`<h2>التحدي التالي</h2><button class="card daily" data-c="${next.id}"><div class="dot">${ico("M8 6l-5 6 5 6M16 6l5 6-5 6")}</div><div class="t"><b>${next.title}</b><small>+${ar(next.xp)} نقطة</small></div><div class="diff">${diff(next.d)}</div></button>`;
+  else h+=`<h2>أنهيت كل التحديات</h2><div class="task">أصلحت كل الأخطاء المتاحة. عُد قريبًا لتحديات جديدة.</div>`;
+  const cats=["الكل",...new Set(CH.map(c=>c.cat))];h+=`<h2>كل التحديات</h2><div class="fl">${cats.map(k=>`<button class="${(k==="الكل"?"all":k)===filt?"on":""}" data-fl="${k==="الكل"?"all":k}">${k}</button>`).join("")}</div>`+CH.map((c,i)=>{if(filt!=="all"&&c.cat!==filt)return"";const s=S.solved[c.id];return `<button class="card" data-c="${c.id}"><div class="dot ${s?"done":""}">${s?ico("M5 13l4 4L19 7"):ar(CH.indexOf(c)+1)}</div><div class="t"><b>${c.title}</b><small>${s?"تم الإصلاح":""+c.cat+" • +"+ar(c.xp)+" نقطة"}</small></div><div class="diff">${diff(c.d)}</div></button>`}).join("");
+  $("view").innerHTML=h;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=$("rv");if(r)r.style.width=Math.max(v.p,4)+"%"}));
+}
+function stats(){
+  const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return{k:dk(d),n:S.days[dk(d)]||0,w:["ح","ن","ث","ر","خ","ج","س"][d.getDay()]}});
+  const mx=Math.max(1,...days.map(d=>d.n));const a=agg();
+  const acc=S.att?Math.round(S.ok/S.att*100):0;
+  const times=Object.values(S.solved).map(x=>x.t);const avg=times.length?Math.round(times.reduce((x,y)=>x+y,0)/times.length):0;
+  $("view").innerHTML=`<h2 style="margin-top:8px">آخر ٧ أيام</h2><div class="bars">${days.map((d,i)=>`<div class="${i===6?"today":""}">${d.n?ar(d.n):""}<span style="height:${d.n/mx*100}%"></span>${d.w}</div>`).join("")}</div>
+  <h2>أداؤك</h2><div class="grid2">
+  <div class="chip"><b>${ar(acc)}٪</b><small>دقة المحاولات</small></div>
+  <div class="chip"><b>${ar(S.att)}</b><small>إجمالي المحاولات</small></div>
+  <div class="chip"><b>${ar(avg)} ث</b><small>متوسط وقت الحل</small></div>
+  <div class="chip"><b>${ar(a.streak)}</b><small>السلسلة الحالية</small></div>
+  <div class="chip"><b>${ar(a.clean)}</b><small>حلول بلا تلميح</small></div>
+  <div class="chip"><b>${ar(S.xp)}</b><small>إجمالي النقاط</small></div></div>`;
+}
+function ach(){
+  const a=agg();
+  $("view").innerHTML=`<h2 style="margin-top:8px">${ar(S.unl.length)} من ${ar(AC.length)} إنجازات</h2>`+AC.map(x=>{const p=Math.min(x.p(a),x.g),on=S.unl.includes(x.id);return `<div class="ach ${on?"on":""}"><div class="ic">${ico(x.ic)}</div><div class="t"><b>${x.t}</b><small>${x.s}</small><div class="bar"><i style="width:${p/x.g*100}%"></i></div></div><small style="margin:0">${ar(p)}/${ar(x.g)}</small></div>`}).join("");
+}
+function sett(){
+  const sw=(k,t,s)=>`<button class="set" data-s="${k}"><div class="t"><b>${t}</b><small>${s}</small></div><div class="sw ${S.set[k]?"on":""}"></div></button>`;
+  $("view").innerHTML=`<h2 style="margin-top:8px">المحرر</h2>
+  <div class="set"><div class="t"><b>حجم خط الشيفرة</b><small>${ar(S.set.fs)} بكسل</small></div><div class="stp"><button data-f="-1">−</button><button data-f="1">+</button></div></div>
+  <h2>التجربة</h2>${sw("hap","الاهتزاز","عند نجاح الإصلاح أو فشله")}${sw("snd","الصوت","نغمة قصيرة عند التحقق")}
+  <h2>البيانات</h2><button class="set" data-reset><div class="t"><b class="danger">مسح كل التقدم</b><small>يحذف النقاط والإنجازات والإحصائيات</small></div></button>`;
+}
+function render(){nav();({home,stats,ach,set:sett})[tab]();$("sn").textContent=ar(streak());$("view").scrollTop=0}
+
+const KW=/^(function|return|if|else|for|while|do|const|let|var|new|of|in|typeof|async|await|break|continue|switch|case|default|throw|try|catch|finally|class|extends|this|delete|instanceof|void)$/,LT=/^(true|false|null|undefined|NaN|Infinity)$/;
+const TK=/(\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:\\.|[^'\\\n])*'?|"(?:\\.|[^"\\\n])*"?|`(?:\\.|[^`\\])*`?)|(\d[\d_]*\.?\d*(?:e[+-]?\d+)?|\.\d+)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/y;
+const RX=/\/(?![*\/])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^\/\\\n\[])+\/[a-z]*/y;
+const KWP=/^(def|return|if|elif|else|for|while|in|not|and|or|is|import|from|as|class|try|except|finally|raise|with|pass|break|continue|lambda|yield|global|nonlocal|del|assert|self|async|await)$/,LTP=/^(None|True|False)$/;
+const TKP=/(#[^\n]*)|("{3}[\s\S]*?(?:"{3}|$)|'{3}[\s\S]*?(?:'{3}|$)|[fFrRbB]{0,2}(?:'(?:\\.|[^'\\\n])*'?|"(?:\\.|[^"\\\n])*"?))|(\d[\d_]*\.?\d*(?:e[+-]?\d+)?|\.\d+)|([A-Za-z_]\w*)|(\s+)|([\s\S])/y;
+function hl(s,py){
+  const E=t=>t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"),S=(c,t)=>`<span class="${c}">${E(t)}</span>`;
+  let o="",i=0,pv="",lw="",m;
+  while(i<s.length){
+    const T=py?TKP:TK;T.lastIndex=i;m=T.exec(s);if(!m)break;const t=m[0];i+=t.length;
+    if(m[1]){o+=S("c",t)}
+    else if(m[2]){o+=S("s",t);pv="n";lw=""}
+    else if(m[3]){o+=S("n",t);pv="n";lw=""}
+    else if(m[4]){
+      if((py?KWP:KW).test(t)){o+=S("k",t);pv="k";lw=t}
+      else if((py?LTP:LT).test(t)){o+=S("n",t);pv="n";lw=""}
+      else{const fn=lw==="function"||lw==="def"||lw==="class"||/^[ \t]*\(/.test(s.slice(i,i+40));o+=fn?S("f",t):E(t);pv="i";lw=""}
+    }
+    else if(m[5]){o+=t}
+    else{
+      if(!py&&t==="/"&&pv!=="i"&&pv!=="n"&&pv!==")"&&pv!=="]"){RX.lastIndex=i-1;const r=RX.exec(s);if(r){o+=S("r",r[0]);i=i-1+r[0].length;pv="n";lw="";continue}}
+      o+=S(/[{}()\[\];,.]/.test(t)?"p":"o",t);pv=t;lw=""
+    }
+  }
+  return o}
+function paint(){const h=$("hl"),c=$("code");h.innerHTML=hl(c.value)+"\n ";h.scrollTop=c.scrollTop;h.scrollLeft=c.scrollLeft}
+/* ===== Challenge ===== */
+let cur=null,t0=0,tries=0,hinted=false,sel=null,ord=[],curTrack=null,trv=null;
+function open(id,tk){
+  cur=CH.find(c=>c.id===id);tries=0;hinted=false;t0=Date.now();curTrack=tk||null;
+  $("chT").textContent=cur.title;$("chD").innerHTML=diff(cur.d);$("chTask").innerHTML=(cur.kind==="mc"?'<span class="tag">Python</span>':"")+cur.desc;
+  $("code").value=cur.code;$("code").scrollTop=0;$("code").scrollLeft=0;paint();$("hint").innerHTML="";$("res").innerHTML="";
+  $("hintBtn").textContent="تلميح";$("runBtn").textContent="تحقق من الإصلاح";$("runBtn").dataset.next="";
+  const mc=cur.kind==="mc";$("edw").style.display=mc?"none":"";$("mc").style.display=mc?"block":"none";sel=null;
+  if(mc){$("mc").innerHTML=mcHtml(cur.code);ord=[...cur.opts.keys()].sort(()=>Math.random()-.5);$("opts").innerHTML=ord.map((k,j)=>`<button class="opt" data-o="${j}">${cur.opts[k]}</button>`).join("");$("runBtn").textContent="تحقق من الإجابة"}else{$("opts").innerHTML="";$("mc").innerHTML=""}
+  $("ch").classList.add("open");history.pushState({c:1},"");
+}
+function closeCh(){$("ch").classList.remove("open");render();if($("tr").classList.contains("open"))drawTr()}
+async function run(){
+  if($("runBtn").dataset.next){const ct=curTrack;closeCh();curTrack=ct;const n=nextUn();if(n)setTimeout(()=>open(n.id,ct),350);return}
+  if(cur.kind==="mc")return runMc();$("runBtn").disabled=true;tries++;S.att++;
+  let f,rows=[],pass=true;
+  try{f=new Function($("code").value+";return "+cur.fn+";")()}catch(e){rows.push(`<div class="f">خطأ في الصياغة: ${String(e.message).replace(/</g,"&lt;")}</div>`);pass=false}
+  if(f){
+    const items=cur.chk?await(async()=>{try{return await cur.chk(f)}catch(e){return[{call:"خطأ",got:"خطأ: "+e.message,exp:"-"}]}})():cur.tests.map(([a,exp])=>{let got;try{got=f(...a)}catch(e){got="خطأ: "+e.message}return{call:cur.fn+"("+a.map(x=>JSON.stringify(x)).join(", ")+")",got,exp}});
+    for(const it of items){try{it.got=await Promise.race([it.got,new Promise((_,r)=>setTimeout(()=>r(new Error("انتهت المهلة")),2000))])}catch(e){it.got="خطأ: "+e.message}const ok=JSON.stringify(it.got)===JSON.stringify(it.exp);if(!ok)pass=false;
+      rows.push(`<div class="${ok?"p":"f"}">${ok?"✓":"✗"} ${String(it.call).replace(/</g,"&lt;")} ${ok?"":"→ "+String(JSON.stringify(it.got)).replace(/</g,"&lt;")+" (المتوقع "+String(JSON.stringify(it.exp)).replace(/</g,"&lt;")+")"}</div>`)}
+  }
+  $("runBtn").disabled=false;$("res").innerHTML=rows.join("");$("res").scrollIntoView({behavior:"smooth",block:"end"});
+  if(!pass){beep(0);buzz([60,40,60]);return}
+  win();
+}
+function win(){S.ok++;beep(1);buzz(40);
+  $("hint").innerHTML=`<div class="hint" style="background:#46C79A18;border-color:#46C79A55;color:#B8EBD6"><b>الدرس:</b> ${cur.why}</div>`;
+  if(!S.solved[cur.id]){
+    const t=Math.round((Date.now()-t0)/1000);
+    S.solved[cur.id]={t,h:hinted,a:tries};S.xp+=Math.max(cur.xp-(hinted?10:0),5);
+    S.days[dk(new Date())]=(S.days[dk(new Date())]||0)+1;
+    const a=agg();AC.forEach(x=>{if(!S.unl.includes(x.id)&&x.p(a)>=x.g){S.unl.push(x.id);setTimeout(()=>toast("إنجاز جديد: "+x.t),900)}});
+    toast("أحسنت! تم إصلاح الخطأ");
+  }else toast("الحل صحيح");
+  save();$("sn").textContent=ar(streak());
+  $("runBtn").textContent=nextUn()?"التحدي التالي":(curTrack?"العودة للمسار":"العودة للرئيسية");$("runBtn").dataset.next="1";}
+
+function mcHtml(code){return code.split("\n").map((l,i)=>`<div class="ln"><i>${i+1}</i><span>${hl(l,true)||" "}</span></div>`).join("")}
+function runMc(){
+  if(sel===null){toast("اختر إجابة أولًا");return}
+  tries++;S.att++;
+  const bs=[...document.querySelectorAll(".opt")];
+  if(ord[sel]!==cur.ans){bs[sel].classList.remove("sel");bs[sel].classList.add("bad");sel=null;beep(0);buzz([60,40,60]);save();return}
+  bs.forEach((b,i)=>{b.disabled=true;b.classList.remove("sel");if(ord[i]===cur.ans)b.classList.add("good")});
+  win();$("hint").scrollIntoView({behavior:"smooth",block:"end"})}
+function chCard(c,n,tk){const s=S.solved[c.id];return `<button class="card" data-c="${c.id}" data-tk="${tk}"><div class="dot ${s?"done":""}">${s?ico("M5 13l4 4L19 7"):ar(n)}</div><div class="t"><b>${c.title}</b><small>${s?"تم الإصلاح":c.cat+" • +"+ar(c.xp)+" نقطة"}</small></div><div class="diff">${diff(c.d)}</div></button>`}
+function drawTr(){
+  const b=$("trB");
+  if(!trv){$("trT").textContent="المسارات";
+    b.innerHTML=`<p style="color:var(--mut);line-height:1.8;margin:4px 0 16px">كل مسار يجمع تحديات في موضوع واحد، من الأسهل إلى الأصعب.</p>`+TR.map(t=>{const d=t.ids.filter(id=>S.solved[id]).length,n=t.ids.length;return `<button class="card" data-tr="${t.id}"><div class="dot ${d===n?"done":""}">${ico(d===n?"M5 13l4 4L19 7":t.ic)}</div><div class="t"><b>${t.t}</b><small>${t.d}</small><div class="bar" style="margin-top:8px"><i style="width:${d/n*100}%"></i></div></div><small style="color:var(--mut)">${ar(d)}/${ar(n)}</small></button>`}).join("")}
+  else{const t=TR.find(x=>x.id===trv);$("trT").textContent=t.t;
+    b.innerHTML=`<p style="color:var(--mut);line-height:1.8;margin:4px 0 16px">${t.d}</p>`+t.ids.map((id,i)=>chCard(CH.find(c=>c.id===id),i+1,t.id)).join("")}}
+function trOpen(){$("tr").classList.add("open");history.pushState({t:1},"")}
+function closeTr(){$("tr").classList.remove("open");trv=null}
+/* ===== Drawer & sheets ===== */
+function drawer(){
+  $("dr").innerHTML=`<div class="brand">Debug <span>Nile</span></div><div class="sub">أصلح الخطأ، اجرِ مع النيل</div>
+  <button class="dbtn" data-go="home">${ico("M4 11l8-7 8 7v9H4z")}الرئيسية</button>
+  <button class="dbtn" data-go="tracks">${ico("M4 6l5-2 6 2 5-2v14l-5 2-6-2-5 2zM9 4v14M15 6v14")}المسارات</button>
+  <button class="dbtn" data-go="kit">${ico("M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z")}حقيبة المنقّح</button>
+  <button class="dbtn" data-go="about">${ico("M12 8v.01M11 12h1v5h1M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z")}عن التطبيق</button>
+  <h2 style="font-size:15px;color:var(--mut)">المزيد من التطبيقات</h2>
+  ${MORE.map((m,i)=>`<button class="app" data-app="${i}"><div class="dot">${m.n[0]}</div><div><b>${m.n}</b><small>${m.d}</small></div></button>`).join("")}`;
+}
+function drOpen(o){$("dr").classList.toggle("on",o);$("scrim").classList.toggle("on",o||$("sheet").classList.contains("on"))}
+function sheet(h){$("sheet").innerHTML=h;$("sheet").classList.add("on");$("scrim").classList.add("on")}
+function sheetClose(){$("sheet").classList.remove("on");if(!$("dr").classList.contains("on"))$("scrim").classList.remove("on")}
+
+const STEPS=["أعد إنتاج الخطأ بأصغر مدخل ممكن، فلا يمكن إصلاح ما لا تستطيع تكراره.","اقرأ رسالة الخطأ كاملة: نوعها واسم الدالة ورقم السطر. غالبًا تقول لك المشكلة بوضوح.","اطبع القيم بـ console.log قبل السطر المشبوه وبعده لتعرف أين تخالف الواقع توقعك.","اعزل المشكلة: عطّل أجزاءً من الشيفرة حتى يختفي الخطأ، فتعرف أن آخر جزء عطّلته هو السبب.","غيّر شيئًا واحدًا في كل مرة ثم اختبر، وإلا لن تعرف أي تغيير أصلح المشكلة.","اكتب اختبارًا صغيرًا يغطي الحالة حتى لا يعود الخطأ لاحقًا."];
+const ERRS=[["TypeError: Cannot read properties of undefined","تقرأ خاصية من قيمة غير موجودة. افحص القيمة قبل النقطة أو استخدم ?."],["TypeError: x is not a function","تستدعي شيئًا ليس دالة. تحقق من الاسم ومن نوع القيمة."],["ReferenceError: x is not defined","متغير غير معرَّف أو خارج نطاقه أو فيه خطأ إملائي."],["TypeError: Assignment to constant variable","تغيّر متغيرًا معرَّفًا بـ const. استخدم let."],["SyntaxError: Unexpected token","قوس أو فاصلة أو علامة اقتباس ناقصة أو زائدة، غالبًا قبل السطر المذكور."],["RangeError: Maximum call stack size exceeded","استدعاء ذاتي بلا حالة توقف صحيحة."],["NaN","عملية حسابية على undefined أو على نص ليس رقمًا."],["Unhandled promise rejection","Promise فشل ولم يلتقطه أحد. أضف catch أو try/catch حول await."]];
+function kit(){sheet(`<h3>حقيبة المنقّح</h3><p>ست خطوات تصلح أي خطأ تقريبًا:</p>`+STEPS.map((t,i)=>`<div class="st"><i>${ar(i+1)}</i><div>${t}</div></div>`).join("")+`<h3 style="margin-top:16px">قاموس رسائل الأخطاء</h3>`+ERRS.map(e=>`<div class="kb"><b>${e[0]}</b><span>${e[1]}</span></div>`).join("")+`<button class="btn main" id="no" style="width:100%;margin-top:8px">حسنًا</button>`);$("sheet").scrollTop=0}
+/* ===== Events ===== */
+document.addEventListener("click",e=>{
+  const g=s=>e.target.closest(s);let x;
+  if(g("#menu")){drawer();drOpen(true)}
+  else if(g("#scrim")){drOpen(false);sheetClose()}
+  else if(x=g("[data-t]")){tab=x.dataset.t;render()}
+  else if(x=g("[data-fl]")){filt=x.dataset.fl;const st=$("view").scrollTop;home();$("view").scrollTop=st}
+  else if(g("[data-kit]"))kit();
+  else if(x=g("[data-tr]")){trv=x.dataset.tr;drawTr();$("trB").scrollTop=0}
+  else if(x=g(".opt")){if(!x.disabled){sel=+x.dataset.o;document.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel","bad"));x.classList.add("sel")}}
+  else if(g("#trBack")){if(trv){trv=null;drawTr()}else history.back()}
+  else if(x=g("[data-c]"))open(x.dataset.c,x.dataset.tk);
+  else if(x=g("[data-s]")){S.set[x.dataset.s]=!S.set[x.dataset.s];save();sett()}
+  else if(x=g("[data-f]")){S.set.fs=Math.min(20,Math.max(11,S.set.fs+ +x.dataset.f));document.documentElement.style.setProperty("--fs",S.set.fs+"px");save();sett()}
+  else if(g("[data-reset]"))sheet(`<h3>مسح كل التقدم؟</h3><p>سيتم حذف النقاط والإنجازات والإحصائيات نهائيًا ولا يمكن التراجع.</p><div class="bar2" style="padding:0;border:0;background:none"><button class="btn" id="no">إلغاء</button><button class="btn main" id="yes" style="background:var(--bad);color:#fff">مسح التقدم</button></div>`);
+  else if(g("#no"))sheetClose();
+  else if(g("#yes")){localStorage.removeItem(K);S={solved:{},att:0,ok:0,days:{},xp:0,unl:[],set:S.set};save();sheetClose();render();toast("تم مسح التقدم")}
+  else if(x=g("[data-go]")){drOpen(false);if(x.dataset.go==="home"){tab="home";render()}else if(x.dataset.go==="kit")kit();else if(x.dataset.go==="tracks"){trv=null;drawTr();trOpen()}else sheet(`<h3>عن Debug Nile</h3><p>هدف التطبيق أن تصبح قادرًا على التعامل مع معظم المشاكل والأخطاء البرمجية بسهولة بإذن الله. يعطيك شيفرة فيها خطأ وعليك اكتشافه وإصلاحه. كل حل يُختبر فعليًا بحالات اختبار حتى تتأكد أن الإصلاح صحيح.</p><p>الإصدار ١٫٥٫٠</p><p>تطوير: علوش</p>`)}
+  else if(x=g("[data-app]")){const m=MORE[x.dataset.app];m.u?window.open(m.u,"_blank"):toast("الرابط قريبًا")}
+  else if(g("#chBack"))history.back();
+  else if(g("#hintBtn")){hinted=true;$("hint").innerHTML=`<div class="hint">${cur.hint}</div>`}
+  else if(g("#runBtn"))run();
+});
+window.addEventListener("popstate",()=>{if($("sheet").classList.contains("on"))sheetClose();else if($("dr").classList.contains("on"))drOpen(false);else if($("ch").classList.contains("open"))closeCh();else if($("tr").classList.contains("open")){if(trv){trv=null;drawTr();history.pushState({t:1},"")}else closeTr()}});
+$("code").addEventListener("keydown",e=>{if(e.key==="Tab"){e.preventDefault();const t=e.target,s=t.selectionStart;t.value=t.value.slice(0,s)+"  "+t.value.slice(t.selectionEnd);t.selectionStart=t.selectionEnd=s+2;paint()}});
+$("code").addEventListener("input",paint);
+$("code").addEventListener("scroll",()=>{$("hl").scrollTop=$("code").scrollTop;$("hl").scrollLeft=$("code").scrollLeft});
+/* swipe from right edge to open drawer */
+let sx=null;document.addEventListener("touchstart",e=>{const t=e.touches[0];sx=(innerWidth-t.clientX<22)?t.clientX:null},{passive:true});
+document.addEventListener("touchmove",e=>{if(sx!==null&&sx-e.touches[0].clientX>50){sx=null;drawer();drOpen(true)}},{passive:true});
+document.documentElement.style.setProperty("--fs",S.set.fs+"px");
+render();
+</script>
+</body>
+</html>
